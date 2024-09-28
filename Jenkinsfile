@@ -16,6 +16,8 @@ pipeline{
 		NEXUSPORT = '8081'
 		NEXUS_GRP_REPO = 'vpro-maven-group'
     // NEXUS_LOGIN = 'NexusLogin' // Après
+    SONARSCANNER = 'sonarscanner4.7'
+    SONARSERVER = 'my-sonar-server'
   }
 
   stages {
@@ -25,7 +27,7 @@ pipeline{
         sh 'mvn -s settings.xml -DskipTests install'
       }
       post {
-        // Archivage de l'artefact .war dans le workspace du pipeline Jenkins
+        // Archivage de l'artefact .war 
         success {
           echo "Now Archiving."
           archiveArtifacts artifacts: '**/*.war'
@@ -42,5 +44,25 @@ pipeline{
         sh 'mvn -s settings.xml checkstyle:checkstyle'
       }
     }
+
+    stage('Sonar Analysis') {
+      environment {
+      scannerHome =  tool "${SONARSCANNER}"
+      }
+      steps {
+        withSonarQubeEnv("${SONARSERVER}") {
+          sh '''
+            ${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=vprofile \
+            -Dsonar.projectName=vprofile \
+            -Dsonar.projectVersion=1.0 \
+            -Dsonar.sources=src/ \
+            -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest/ \
+            -Dsonar.junit.reportsPath=target/surefire-reports/ \
+            -Dsonar.jacoco.reportsPath=target/jacoco.exec \
+            -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml'''
+        }
+      }
+    }
+
   }
 }
