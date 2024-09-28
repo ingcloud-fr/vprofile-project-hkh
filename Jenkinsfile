@@ -21,6 +21,7 @@ pipeline{
   stages {
     stage('Build') {
       steps {
+        // On précise settings.xml pour utiliser notre serveur repo Nexus
         sh 'mvn -s settings.xml -DskipTests install'
       }
       post {
@@ -33,12 +34,12 @@ pipeline{
     }
     stage('Unit Test') {
       steps {
-        sh 'mvn test'
+        sh 'mvn -s settings.xml test'
       }
     }
     stage('Checkstyle Analysis'){
       steps {
-        sh 'mvn checkstyle:checkstyle'
+        sh 'mvn -s settings.xml checkstyle:checkstyle'
       }
     }
   }
