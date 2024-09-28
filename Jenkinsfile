@@ -1,3 +1,8 @@
+def COLOR_MAP = [
+ 'SUCCESS': 'good', // vert dans slack
+ 'FAILURE': 'danger', // rouge dans slack
+]
+
 pipeline{
   agent any
   tools {
@@ -18,6 +23,7 @@ pipeline{
     NEXUS_LOGIN = 'NexusLogin'
     SONARSCANNER = 'sonarscanner4.7'
     SONARSERVER = 'my-sonar-server'
+    SLACK_CHANNEL = '#jenkins-cicd'
   }
 
   stages {
@@ -95,4 +101,14 @@ pipeline{
     }
 
   }
+
+// Notification Slack (echec ou réussite du pipeline)
+post {
+   always {
+     echo 'Slack Notifications'
+     slackSend channel: "${SLACK_CHANNEL}",
+       color: COLOR_MAP[currentBuild.currentResult],
+       message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} \n More info at: ${env.BUILD_URL}"
+   }
+ }
 }
