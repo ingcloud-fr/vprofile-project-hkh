@@ -1,61 +1,74 @@
+// Définit une map de couleurs pour les notifications Slack selon le statut du pipeline (vert pour succès, rouge pour échec)
 def COLOR_MAP = [
  'SUCCESS': 'good', // vert dans slack
  'FAILURE': 'danger', // rouge dans slack
 ]
 
-pipeline{
-  agent any
+pipeline {
+  agent any // Utilise n'importe quel agent disponible
+
   tools {
+    // Définit les outils utilisés dans le pipeline (Maven et JDK 8)
     maven "MAVEN3"
     jdk "OracleJDK8"
   }
 
   environment {
+    // Définition des variables d'environnement pour le pipeline
     SNAP_REPO = 'vprofile-snapshot'
-		NEXUS_USER = 'admin'
-		NEXUS_PASS = 'admin123'
-		RELEASE_REPO = 'vprofile-release'
-		CENTRAL_REPO = 'vpro-maven-central'
-    // IP privée du serveur Nexus
-		NEXUSIP = '172.31.1.109'
-		NEXUSPORT = '8081'
-		NEXUS_GRP_REPO = 'vpro-maven-group'
-    NEXUS_LOGIN = 'NexusLogin'
-    SONARSCANNER = 'sonarscanner4.7'
-    SONARSERVER = 'my-sonar-server'
-    SLACK_CHANNEL = '#jenkins-cicd'
+    NEXUS_USER = 'admin'
+    NEXUS_PASS = 'admin123'
+    RELEASE_REPO = 'vprofile-release'
+    CENTRAL_REPO = 'vpro-maven-central'
+    // IP et port du serveur Nexus pour la gestion des artefacts
+    NEXUSIP = '172.31.1.109'
+    NEXUSPORT = '8081'
+    NEXUS_GRP_REPO = 'vpro-maven-group'
+    NEXUS_LOGIN = 'NexusLogin' // Credential pour se connecter à Nexus
+    SONARSCANNER = 'sonarscanner4.7' // SonarQube scanner pour analyse de code
+    SONARSERVER = 'my-sonar-server' // Serveur SonarQube pour analyse
+    SLACK_CHANNEL = '#jenkins-cicd' // Channel Slack pour les notifications
+    registryCredentials = "ecr:eu-west-3:AwsCredentials" // Credential pour l'enregistrement Docker
+    appRegistry = '851725523446.dkr.ecr.eu-west-3.amazonaws.com/vprofile-app-img-ecr' // URL du registre d'application Docker
+    vprofileRegistry = 'https://851725523446.dkr.ecr.eu-west-3.amazonaws.com' // Registre Docker pour l'application
   }
 
   stages {
     stage('Build') {
       steps {
-        // On précise settings.xml pour utiliser notre serveur repo Nexus
+        // Compilation du projet Java en utilisant Maven avec un settings.xml spécifique pour Nexus
         sh 'mvn -s settings.xml -DskipTests install'
       }
       post {
-        // Archivage de l'artefact .war 
+        // Si la compilation réussit, archive le fichier .war généré
         success {
           echo "Now Archiving."
           archiveArtifacts artifacts: '**/*.war'
         }
       }
     }
+
     stage('Unit Test') {
       steps {
+        // Exécute les tests unitaires avec Maven
         sh 'mvn -s settings.xml test'
       }
     }
-    stage('Checkstyle Analysis'){
+
+    stage('Checkstyle Analysis') {
       steps {
+        // Exécute l'analyse Checkstyle pour vérifier la qualité du code
         sh 'mvn -s settings.xml checkstyle:checkstyle'
       }
     }
 
     stage('Sonar Analysis') {
       environment {
-      scannerHome =  tool "${SONARSCANNER}"
+        // Définit l'outil SonarQube scanner pour l'analyse du code
+        scannerHome = tool "${SONARSCANNER}"
       }
       steps {
+        // Exécute l'analyse SonarQube avec les configurations de projet et le rapport de tests
         withSonarQubeEnv("${SONARSERVER}") {
           sh '''
             ${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=vprofile \
@@ -69,11 +82,11 @@ pipeline{
         }
       }
     }
-    stage("Quality Gate"){
+
+    stage("Quality Gate") {
       steps {
-        timeout(time:5, unit: "MINUTES") {
-          // Parameter indicates whether to set pipeline to UNSTABLE if Quality Gate fails
-          // true = set pipeline to UNSTABLE, false = don't
+        timeout(time: 5, unit: "MINUTES") {
+          // Vérifie si le projet passe les Quality Gates de SonarQube
           waitForQualityGate abortPipeline: true
         }
       }
@@ -81,6 +94,7 @@ pipeline{
 
     stage('NexusUpload') {
       steps {
+        // Télécharge l'artefact .war sur Nexus
         nexusArtifactUploader(
           nexusVersion: 'nexus3',
           protocol: 'http',
@@ -92,7 +106,7 @@ pipeline{
           artifacts: [
             [artifactId: 'vproapp',
             classifier: '',
-            //file: 'my-service-' + version + '.jar',
+            // Spécifie le fichier .war à télécharger
             file: 'target/vprofile-v2.war',
             type: 'war']
           ]
@@ -100,15 +114,35 @@ pipeline{
       }
     }
 
+    stage('Build App Docker Image') {
+      steps {
+        script {
+          // Crée l'image Docker de l'application à partir du fichier Docker
+          dockerImage = docker.build(appRegistry + ":$BUILD_NUMBER", "./Docker-files/app/multistage/")
+        }
+      }
+    }
+
+    stage('Upload App Docker Image') {
+      steps {
+        script {
+          // Pousse l'image Docker dans le registre Docker
+          docker.withRegistry(vprofileRegistry, registryCredentials) {
+            dockerImage.push("$BUILD_NUMBER")
+            dockerImage.push('latest')
+          }
+        }
+      }
+    }
   }
 
-// Notification Slack (echec ou réussite du pipeline)
-post {
-   always {
-     echo 'Slack Notifications'
-     slackSend channel: "${SLACK_CHANNEL}",
-       color: COLOR_MAP[currentBuild.currentResult],
-       message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} \n More info at: ${env.BUILD_URL}"
-   }
- }
+  // Envoie des notifications Slack après l'exécution du pipeline
+  post {
+    always {
+      echo 'Slack Notifications'
+      slackSend channel: "${SLACK_CHANNEL}",
+        color: COLOR_MAP[currentBuild.currentResult],
+        message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} \n More info at: ${env.BUILD_URL}"
+    }
+  }
 }
