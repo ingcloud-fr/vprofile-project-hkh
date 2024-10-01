@@ -8,6 +8,7 @@ pipeline {
   agent any // Utilise n'importe quel agent disponible
 
   environment {
+    SLACK_CHANNEL = '#jenkins-cicd' // Channel Slack pour les notifications
     CLUSTER = 'vprofile-prod-cluster' // Nom du cluster ECS
     SERVICE = 'vpro-app-cluster-prod-svc' // Nom du service du cluster ECS
   }
