@@ -31,6 +31,8 @@ pipeline {
     registryCredentials = "ecr:eu-west-3:AwsCredentials" // Credential pour l'enregistrement Docker
     appRegistry = '851725523446.dkr.ecr.eu-west-3.amazonaws.com/vprofile-app-img-ecr' // URL du registre d'application Docker
     vprofileRegistry = 'https://851725523446.dkr.ecr.eu-west-3.amazonaws.com' // Registre Docker pour l'application
+    CLUSTER = 'vprofile-staging-cluster' // Nom du cluster ECS
+    SERVICE = 'vpro-app-cluster-staging-svc'
   }
 
   stages {
@@ -134,6 +136,15 @@ pipeline {
         }
       }
     }
+
+    stage('Deploy to ECS Staging') {
+      steps {
+        withAWS(credentials: 'AwsCredentials', region: 'eu-west-3') {
+          sh 'aws ecs update-service --cluster ${CLUSTER} --service ${SERVICE} --force-new-deployment'
+        }
+      }
+    }
+
   }
 
   // Envoie des notifications Slack après l'exécution du pipeline
