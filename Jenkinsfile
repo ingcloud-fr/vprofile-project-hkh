@@ -24,7 +24,7 @@ pipeline {
               ),
               string(
                 defaultValue: '',
-                name: 'TIME'
+                name: 'TIMESTAMP'
               )
             ])
           ])
