@@ -11,6 +11,8 @@ pipeline {
   }
 
   environment {
+    JAVA_HOME = '/opt/java/openjdk'
+    PATH = "${JAVA_HOME}/bin:${PATH}"
     SNAP_REPO = 'vprofile-snapshot' // Dépôt snapshot pour les artefacts Maven
     NEXUS_USER = 'admin' // Nom d'utilisateur pour Nexus
     NEXUS_PASS = 'admin123' // Mot de passe pour Nexus (à sécuriser idéalement)
