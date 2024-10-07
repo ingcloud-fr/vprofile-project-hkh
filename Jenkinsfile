@@ -7,6 +7,8 @@ pipeline {
   agent any // L'agent Jenkins pour exécuter le pipeline sur n'importe quel nœud disponible
 
   environment {
+    //JAVA_HOME = '/opt/java/openjdk'
+    //PATH = "${JAVA_HOME}/bin:${PATH}"
     SLACK_CHANNEL = '#jenkins-cicd' // Canal Slack pour les notifications
     NEXUSPASS = credentials('nexuspass') // Utilisation des credentials Jenkins pour sécuriser le mot de passe Nexus
   }
