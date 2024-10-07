@@ -24,7 +24,6 @@ pipeline{
     SONARSCANNER = 'sonarscanner4.7'
     SONARSERVER = 'my-sonar-server'
     SLACK_CHANNEL = '#jenkins-cicd'
-    NEXUSPASS = credentials('nexuspass')
   }
 
   stages {
@@ -101,29 +100,6 @@ pipeline{
       }
     }
 
-    stage('Ansible Deploy to staging') {
-      steps {
-        ansiblePlaybook([
-          inventory: 'ansible.stage.inventory',
-          playbook: 'ansible/site.yml',
-          installation: 'ansible',
-          colorized: true,
-          credentials: 'applogin',
-          disableHostKeyChecking: true,
-          extraVars: [
-            USER: "admin",
-            PASS: "${env.NEXUSPASS}",
-            nexusip: '172.31.1.109',
-            reponame: "vprofile-release",
-            groupid: "QA",
-            time: "${env.BUILD_TIMESTAMP}"
-            build: "${env.BUILD_ID}"
-            artifactid: "vproapp"
-            vprofile_version: "vproapp-${env.BUILD_ID}-${env.BUILD_TIMESTAMP}.war"
-          ]
-        ])
-      }
-    }
   }
 
 // Notification Slack (echec ou réussite du pipeline)

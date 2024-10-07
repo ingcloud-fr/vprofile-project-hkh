@@ -1,74 +1,73 @@
-
 - name: Setup Tomcat8 & Deploy Artifact
-  hosts: appsrvgrp
-  become: yes
+  hosts: appsrvgrp  # Définit le groupe d'hôtes sur lesquels ce playbook s'exécute
+  become: yes  # Exécute les tâches avec des privilèges sudo
   vars:
-    timestamp: "{{ansible_date_time.date}}_{{ansible_date_time.hour}}_{{ansible_date_time.minute}}"
+    timestamp: "{{ansible_date_time.date}}_{{ansible_date_time.hour}}_{{ansible_date_time.minute}}"  # Génère un horodatage pour les sauvegardes
   tasks:
     - name: Download latest VProfile.war from nexus
       get_url:
         url: "http://{{USER}}:{{PASS}}@{{nexusip}}:8081/repository/{{reponame}}/{{groupid}}/{{artifactid}}/{{build}}-{{time}}/{{vprofile_version}}"
-        dest: "/tmp/vproapp-{{vprofile_version}}"
-      register: wardeploy
+        dest: "/tmp/vproapp-{{vprofile_version}}"  # Télécharge le fichier WAR depuis le Nexus et l'enregistre dans le répertoire temporaire
+      register: wardeploy  # Enregistre les informations de téléchargement dans une variable pour les utiliser plus tard
       tags:
-       - deploy
+       - deploy  # Associe cette tâche avec le tag 'deploy' pour un filtrage éventuel
 
     - stat:
-        path: /usr/local/tomcat8/webapps/ROOT
-      register: artifact_stat
+        path: /usr/local/tomcat8/webapps/ROOT  # Vérifie si l'application ROOT existe déjà
+      register: artifact_stat  # Enregistre le résultat de la vérification
       tags:
        - deploy
 
     - name: Stop tomcat svc
       service:
         name: tomcat
-        state: stopped
+        state: stopped  # Arrête le service Tomcat avant de déployer la nouvelle application
       tags:
        - deploy
 
     - name: Try Backup and Deploy
-      block:
+      block:  # Blocs d'actions à tenter, incluant des opérations de sauvegarde et de déploiement
       - name: Archive ROOT dir with timestamp
         archive:
-          path: /usr/local/tomcat8/webapps/ROOT
+          path: /usr/local/tomcat8/webapps/ROOT  # Archive le répertoire ROOT (si présent) avec un horodatage
           dest: "/opt/ROOT_{{timestamp}}.tgz"
-        when: artifact_stat.stat.exists
-        register: archive_info
+        when: artifact_stat.stat.exists  # Archive uniquement si le dossier ROOT existe
+        register: archive_info  # Enregistre les infos de l'archive
         tags:
          - deploy
 
       - name: copy ROOT dir with old_ROOT name
-        shell: cp -r ROOT old_ROOT
+        shell: cp -r ROOT old_ROOT  # Fait une copie de sauvegarde du dossier ROOT
         args:
-          chdir: /usr/local/tomcat8/webapps/
+          chdir: /usr/local/tomcat8/webapps/  # Définit le répertoire de travail
 
       - name: Delete current artifact
         file:
-          path: "{{item}}"
+          path: "{{item}}"  # Supprime l'ancienne application et son fichier WAR
           state: absent
-        when: archive_info.changed
+        when: archive_info.changed  # Supprime uniquement si l'archive a bien été créée
         loop:
          - /usr/local/tomcat8/webapps/ROOT
-         - /usr/local/tomcat8/webapps/ROOT.war
+         - /usr/local/tomcat8/webapps/ROOT.war  # Supprime à la fois le dossier ROOT et le fichier WAR
         tags:
          - deploy
 
-      - name: Try deploy artifact else restore from previos old_ROOT
-        block:
+      - name: Try deploy artifact else restore from previous old_ROOT
+        block:  # Bloc pour tenter le déploiement de l'application
          - name: Deploy vprofile artifact
            copy:
-             src: "/tmp/vproapp-{{vprofile_version}}"
+             src: "/tmp/vproapp-{{vprofile_version}}"  # Copie le nouveau fichier WAR dans Tomcat
              dest: /usr/local/tomcat8/webapps/ROOT.war
-             remote_src: yes
-           register: deploy_info
+             remote_src: yes  # Indique que le fichier source est sur la machine distante
+           register: deploy_info  # Enregistre les infos sur le déploiement
            tags:
             - deploy
-        rescue:
-          - shell: cp -r old_ROOT ROOT
+        rescue:  # Si le déploiement échoue, restaure la sauvegarde
+          - shell: cp -r old_ROOT ROOT  # Copie l'ancienne application à partir de old_ROOT
             args:
               chdir: /usr/local/tomcat8/webapps/
 
-      rescue:
+      rescue:  # Si une erreur survient dans le bloc Try Backup and Deploy, redémarre Tomcat
        - name: Start tomcat svc
          service:
           name: tomcat
@@ -77,17 +76,18 @@
     - name: Start tomcat svc
       service:
         name: tomcat
-        state: started
-      when: deploy_info.changed
+        state: started  # Redémarre Tomcat si l'application a été déployée avec succès
+      when: deploy_info.changed  # Ne démarre que si un nouveau déploiement a eu lieu
       tags:
        - deploy
 
     - name: Wait until ROOT.war is extracted to ROOT directory
       wait_for:
-        path: /usr/local/tomcat8/webapps/ROOT
+        path: /usr/local/tomcat8/webapps/ROOT  # Attend que Tomcat ait extrait le fichier ROOT.war
       tags:
        - deploy
 
+## Pour déployer un application.properties spécifique (services backend spec).
 #    - name: Deploy web configuration file
 #      template:
 #        src: templates/application.j2
@@ -98,8 +98,8 @@
 #      tags:
 #       - deploy
 
-  handlers:
+  handlers: # Non utilisé - dépend du bloc au dessus qui est commenté
    - name: Restart Tomcat
      service:
       name: tomcat
-      state: restarted
+      state: restarted  # Handler pour redémarrer Tomcat si une notification l'exige
