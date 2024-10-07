@@ -7,8 +7,7 @@ pipeline {
   agent any // L'agent Jenkins pour exécuter le pipeline sur n'importe quel nœud disponible
   tools {
     maven "MAVEN3" // Spécifie l'utilisation de Maven 3 pour ce pipeline
-    //jdk "OracleJDK8" // Spécifie l'utilisation de JDK 8 pour ce pipeline
-    jdk "OracleJDK8-Agent" // Spécifie l'utilisation de JDK 8 pour ce pipeline
+    jdk "OracleJDK8" // Spécifie l'utilisation de JDK 8 pour ce pipeline
   }
 
   environment {
