@@ -29,6 +29,15 @@ pipeline {
   }
 
   stages {
+
+    stage('Verify Env') {
+      steps {
+        sh 'echo $JAVA_HOME'
+        sh 'java -version'
+      }
+    }
+
+    
     stage('Build') { // Étape pour construire le projet
       steps {
         // Exécution de Maven en utilisant un fichier settings.xml personnalisé pour pointer vers Nexus
