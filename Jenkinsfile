@@ -47,7 +47,7 @@ pipeline {
             nexusip: '172.31.1.109',
             reponame: "vprofile-release",
             groupid: "QA",
-            time: "${env.BUILD}", // N'existe pas - provient de l'utilisateur
+            time: "${env.TIMESTAMP}", // N'existe pas - provient de l'utilisateur
             build: "${env.BUILD}", // N'existe pas - provient de l'utilisateur
             artifactid: "vproapp",
             vprofile_version: "vproapp-${env.BUILD}-${env.TIMESTAMP}.war" // Version complète de l'artefact
