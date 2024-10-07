@@ -7,12 +7,11 @@ pipeline {
   agent any // L'agent Jenkins pour exécuter le pipeline sur n'importe quel nœud disponible
   tools {
     maven "MAVEN3" // Spécifie l'utilisation de Maven 3 pour ce pipeline
-    jdk "OracleJDK8" // Spécifie l'utilisation de JDK 8 pour ce pipeline
+    //jdk "OracleJDK8" // Spécifie l'utilisation de JDK 8 pour ce pipeline
+    jdk "OracleJDK8-Agent" // Spécifie l'utilisation de JDK 8 pour ce pipeline
   }
 
   environment {
-    JAVA_HOME = '/opt/java/openjdk'
-    PATH = "${JAVA_HOME}/bin:${PATH}"
     SNAP_REPO = 'vprofile-snapshot' // Dépôt snapshot pour les artefacts Maven
     NEXUS_USER = 'admin' // Nom d'utilisateur pour Nexus
     NEXUS_PASS = 'admin123' // Mot de passe pour Nexus (à sécuriser idéalement)
@@ -29,7 +28,6 @@ pipeline {
   }
 
   stages {
-
     stage('Verify Env') {
       steps {
         sh 'echo $JAVA_HOME'
@@ -37,7 +35,6 @@ pipeline {
       }
     }
 
-    
     stage('Build') { // Étape pour construire le projet
       steps {
         // Exécution de Maven en utilisant un fichier settings.xml personnalisé pour pointer vers Nexus
