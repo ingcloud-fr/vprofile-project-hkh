@@ -116,9 +116,9 @@ pipeline{
             nexusip: '172.31.1.109',
             reponame: "vprofile-release",
             groupid: "QA",
-            time: "${env.BUILD_TIMESTAMP}"
-            build: "${env.BUILD_ID}"
-            artifactid: "vproapp"
+            time: "${env.BUILD_TIMESTAMP}",
+            build: "${env.BUILD_ID}",
+            artifactid: "vproapp",
             vprofile_version: "vproapp-${env.BUILD_ID}-${env.BUILD_TIMESTAMP}.war"
           ]
         ])
