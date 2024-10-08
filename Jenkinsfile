@@ -32,6 +32,7 @@ pipeline{
     // Le nom de l'environnement
     AWS_EB_ENVIRONMENT = 'vproapp-staging'
     AWS_EB_APP_VERSION = "${BUILD_ID}"
+    ARTIFACT_NAME = 'vprofile-v2.war'
   }
 
   stages {
