@@ -109,7 +109,7 @@ pipeline{
     }
   
 
-  stage('Deploy to Stage Beanstalk'){
+  stage('Deploy to Beanstalk staging env'){
     steps {
       withAWS(credentials: 'awsbeancreds', region:"eu-west-3") {
         sh 'aws s3 cp ./target/vprofile-v2.war s3://$AWS_S3_BUCKET/$ARTIFACT_NAME'
