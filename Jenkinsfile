@@ -24,6 +24,14 @@ pipeline{
     SONARSCANNER = 'sonarscanner4.7'
     SONARSERVER = 'my-sonar-server'
     SLACK_CHANNEL = '#jenkins-cicd'
+    // Pour déploiment Beanstalk
+    // Le nom du S3
+    AWS_S3_BUCKET = 'ingcloud-vprocicdbean'
+    // Le nom de l'app
+    AWS_EB_APP_NAME = 'vproapp'
+    // Le nom de l'environnement
+    AWS_EB_ENVIRONMENT = 'vproapp-staging'
+    AWS_EB_APP_VERSION = "${BUILD_ID}"
   }
 
   stages {
@@ -99,8 +107,18 @@ pipeline{
         )
       }
     }
-
   }
+
+  stage('Deploy to Stage Beanstalk'){
+    steps {
+      withAWS(credentials: 'awsbeancreds', region:"eu-west-3") {
+        sh 'aws s3 cp ./target/vprofile-v2.war s3://$AWS_S3_BUCKET/$ARTIFACT_NAME'
+        sh 'aws elasticbeanstalk create-application-version --application-name $AWS_EB_APP_NAME --version-label $AWS_EB_APP_VERSION --source-bundle S3Bucket=$AWS_S3_BUCKET,S3Key=$ARTIFACT_NAME'
+        sh 'aws elasticbeanstalk update-environment --application-name $AWS_EB_APP_NAME --environment-name $AWS_EB_ENVIRONMENT --version-label $AWS_EB_APP_VERSION'
+      }
+    }
+  }
+
 
 // Notification Slack (echec ou réussite du pipeline)
 post {
