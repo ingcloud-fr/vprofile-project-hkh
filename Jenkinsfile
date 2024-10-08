@@ -1,5 +1,9 @@
 // Fetch the last successful build from cicd-jenkins-bean-stage
-def buildNumber = Jenkins.instance.getItem('cicd-jenkins-bean-stage').lastSuccessfulBuild.number
+// Methode neceissatnt une approbation
+// def buildNumber = Jenkins.instance.getItem('cicd-jenkins-bean-stage').lastSuccessfulBuild.number
+// On va préféré celle là :
+def build = build job: 'cicd-jenkins-bean-stage', propagate: false, wait: true
+def buildNumber = build.number
 
 def COLOR_MAP = [
  'SUCCESS': 'good', // vert dans slack
