@@ -107,7 +107,7 @@ pipeline{
         )
       }
     }
-  }
+  
 
   stage('Deploy to Stage Beanstalk'){
     steps {
@@ -118,7 +118,7 @@ pipeline{
       }
     }
   }
-
+}
 
 // Notification Slack (echec ou réussite du pipeline)
 post {
